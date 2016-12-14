@@ -1,36 +1,13 @@
+__author__ = 'vladimir'
 import urllib2
 import urllib
 import ssl
-import sys
 import threading
 import time
 import os
+from Utils import *
 from HTMLParser import HTMLParser
-
 GFRoot="https://www.goodfon.ru"
-MResolution="1366x768"
-
-def ConvertArgsToString(args):
-    builder = ""
-    for elm in args:
-        builder=builder+str(elm)
-    return builder
-
-def LogI(*args):
-    print "INFO : "+ConvertArgsToString(args)
-
-def LogE(*args):
-    print "ERROR : "+ConvertArgsToString(args)
-
-def LogD(*args):
-    print "DEBUG : "+ConvertArgsToString(args)
-
-def getAttrByKey(key,attrs):
-    attr = [item for item in attrs if item[0] == key]
-    if attr.__len__() > 0 and attr[0].__len__() > 0:
-        return attr[0][1]
-
-    return None
 
 class GoodFonImagePageParser(HTMLParser):
 
@@ -169,84 +146,3 @@ def DownloadAllImagesFromGoodFonPage(PageURI,outputDir):
                 LogI("File",FinalFilePath,"already exists, Skipping it")
     for t in threads:
         t.join()
-
-Catalog =""
-EndPage=1
-StartPage=1
-outputDir=""
-
-if sys.argv.__len__() >= 2:
-    Catalog = sys.argv[1]
-
-    if sys.argv.__len__() >= 3:
-        outputDir = sys.argv[2]
-
-    if sys.argv.__len__() >= 4:
-        EndPage = sys.argv[3]
-
-    if sys.argv.__len__() >= 5:
-        StartPage = sys.argv[4]
-
-
-    print "START RETRIEVING IMAGES"
-    if EndPage == StartPage:
-        DownloadAllImagesFromGoodFonPage(Catalog+"/index-"+str(EndPage)+".html",outputDir)
-    elif int(EndPage) > 1:
-        for i in range(int(StartPage),int(EndPage)):
-            try:
-                print "RETRIEVING PAGE num ",i
-                DownloadAllImagesFromGoodFonPage(Catalog+"/index-"+str(i)+".html",outputDir)
-            except UnicodeDecodeError:
-                print "Unicode decode error occurred, cannot download page number ",i
-    elif int(EndPage) == -1:
-        while True:
-            DownloadAllImagesFromGoodFonPage(Catalog,outputDir)
-    else:
-        DownloadAllImagesFromGoodFonPage(Catalog,outputDir)
-
-# LogI("Image URI found : ","hello")
-
-# print os.path.isfile("D:\\images\\col-price-open-your-mind.jpg")
-# os.remove("D:\\images\\col-price-open-your-mind.jpg")
-# # try:
-#     context = ssl._create_unverified_context()
-#     print urllib2.urlopen("https://img3.goodfon.ru/original/2800x1919/7/4f/fentezi-devushki-lotosy.jpg",context=context).read()
-# except urllib2.HTTPError:
-#     print "HTTP ERROR"
-#                     time.sleep(int(RestTime))
-# parser = GoodFonWallpaperInfoPageParser()
-# context = ssl._create_unverified_context()
-# try:
-#     parser.feed(str(urllib2.urlopen("https://www.goodfon.ru/wallpaper/monster-tight-storm-lightning.html",context=context).read()))
-# except urllib2.URLError:
-#     print "Error opening "
-
-# requiredDownloadPages = 2
-#
-# for i in range(1,requiredDownloadPages+1):
-#     path = "catalog/nature/index-"+str(i)+".html"
-#     # path = "catalog/fantasy/random"
-
-
-# print 'Argument List:', str(sys.argv)
-
-
-
-# try:
-#     context = ssl._create_unverified_context()
-#     if str(urllib2.urlopen("https://img2.goodfon.ru/original/1366x768/5/27/art-mingsong-jia-devushka.jpg",context=context).read()).__len__() > 0:
-#         DownloadAllImagesFromGoodFonPage("catalog/fantasy/random")
-# except:
-#     print "error"
-#     pass
-
-#downloadImageFromGFURL("https://www.goodfon.ru","noch-nebo-oblaka-zvezdy-luna","1366x768","D:\\images\\outfile.jpg")
-#print str(urllib2.urlopen("https://www.goodfon.ru",context=context).read())
-
-# arr= [("hello",2),("hello",4),("fuu",5),("foo",7)]
-#
-# print str([item for item in arr if item[0] == "foo"][0][1]) # 7
-
-# for ch in "HELLO"[::-1]:
-#     print ch
-# print str("HELLLO"[-3:-1])
