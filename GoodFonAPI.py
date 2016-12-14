@@ -50,7 +50,7 @@ class GoodFonCatalogPageParser(HTMLParser):
             #LogD("a tag entering:" , "AND ATTRS = ",attrs)
             if self.BoolInTab == True and attrs[0][0] == "href":
                 URL = attrs[0][1]
-                LogI("Found Image URL : ", URL)
+                #LogD("Found Image URL : ", URL)
                 self.ListImageURL.append(URL)
                 self.BoolInTab = False
 
@@ -82,7 +82,7 @@ def waitUntilAllowedToDownload():
             LogE("HTTP ERROR wait another 5 minutes")
             time.sleep(300)
 
-def findPicturesURLInCatalog(root,CatalogUrl):
+def findGFPicturesURLInCatalog(root,CatalogUrl):
 
     parser = GoodFonCatalogPageParser(root)
     context = ssl._create_unverified_context()
@@ -130,7 +130,7 @@ def DownloadOriginalResolutionImage(GFURL,imageName,outputFilePath):
 
 def DownloadAllImagesFromGoodFonPage(PageURI,outputDir):
     waitUntilAllowedToDownload()
-    URIs = findPicturesURLInCatalog(GFRoot,GFRoot+"/"+PageURI)
+    URIs = findGFPicturesURLInCatalog(GFRoot,GFRoot+"/"+PageURI)
     threads=[]
     if URIs != None:
         for URI in URIs:
