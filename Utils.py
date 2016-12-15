@@ -3,7 +3,7 @@
 def ConvertArgsToString(args):
     builder = ""
     for elm in args:
-        builder=builder+str(elm)
+        builder=builder+str(elm)+" "
     return builder
 
 def LogI(*args):
@@ -21,4 +21,3 @@ def getAttrByKey(key,attrs):
         return attr[0][1]
 
     return None
-
