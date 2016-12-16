@@ -1,5 +1,6 @@
 
 
+DebugEnabled=False
 def ConvertArgsToString(args):
     builder = ""
     for elm in args:
@@ -13,7 +14,8 @@ def LogE(*args):
     print "ERROR : "+ConvertArgsToString(args)
 
 def LogD(*args):
-    print "DEBUG : "+ConvertArgsToString(args)
+    if DebugEnabled:
+        print "DEBUG : "+ConvertArgsToString(args)
 
 def getAttrByKey(key,attrs):
     attr = [item for item in attrs if item[0] == key]

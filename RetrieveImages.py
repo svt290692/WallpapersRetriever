@@ -1,6 +1,6 @@
 import sys
 from GoodFonAPI import DownloadAllImagesFromGoodFonPage
-from NastolAPI import DownloadAllImagesFromNastolPage
+from NastolAPI import NastolWallpapersRetriever
 import urllib2
 import urllib
 import ssl
@@ -63,7 +63,9 @@ parseSysArgs()
 if SourceSite == SourceType_GoofFon:
     startGoodFonRetrieving()
 elif SourceSite == SourceType_Nastol:
-    DownloadAllImagesFromNastolPage(Catalog,int(StartPage),int(EndPage),outputDir)
+    retriever = NastolWallpapersRetriever(Catalog,StartPage,EndPage,outputDir)
+    retriever.StartRetrieving()
+    # DownloadAllImagesFromNastolPage(Catalog,int(StartPage),int(EndPage),outputDir)
 
 
 
