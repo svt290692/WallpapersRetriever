@@ -93,6 +93,8 @@ class NastolWallpapersRetriever:
         self.__CurrentPageProcessed=0
         self.__IsWorking=False
         self.__ErrorsDownloadingCount=0
+        self.__ErrorInPagesProceeding=0
+        self.__successfullyDownloadedImages=0
 
     def StartRetrieving(self):
         self.__IsWorking = True
@@ -110,6 +112,7 @@ class NastolWallpapersRetriever:
                     WallpapersURLsList = self.__GetWallpapersInfoPagesList(pageNum)
                     if WallpapersURLsList != None and WallpapersURLsList.__len__() == 0 :
                         self.__PagesWIthError.append(pageNum)
+                        self.__ErrorInPagesProceeding+=1
                     elif WallpapersURLsList != None:
                         self.__StartRetrievingOriginResolutionWallpapers(WallpapersURLsList)
                     while self.__CurrentSimultaneousDownloads > self.__MaximumSimultaneousDownloads:
@@ -120,6 +123,7 @@ class NastolWallpapersRetriever:
 
         for t in self.__ThreadsDownloads:
             t.join()
+        time.sleep(2)
         self.__IsWorking=False
         self.__PrintStatusThread.join()
         del self.__ThreadsDownloads[:]
@@ -134,8 +138,11 @@ class NastolWallpapersRetriever:
     def __printStatus(self):
         sys.stdout.write('\r')
         sys.stdout.write("Processing page num : "+str(self.__CurrentPageProcessed))
-        sys.stdout.write(" Current Count of threads : "+str(self.__CurrentSimultaneousDownloads))
-        sys.stdout.write(" Error download images count =  : "+str(self.__ErrorsDownloadingCount))
+        sys.stdout.write(" Images Downloading threads : "+str(self.__CurrentSimultaneousDownloads))
+        sys.stdout.write(" Downloaded Images : "+str(self.__successfullyDownloadedImages))
+        sys.stdout.write(" Error downloading images : "+str(self.__ErrorsDownloadingCount))
+        sys.stdout.write(" Whole pages error : "+str(self.__ErrorInPagesProceeding))
+
 
         
     
@@ -145,7 +152,7 @@ class NastolWallpapersRetriever:
         LogD("Open URL : ",InfoPageURL)
         try:
             CatalogParser = NastolCatalogPageParser()
-            CatalogParser.feed(str(urllib2.urlopen(InfoPageURL,context=self.__sslContext).read()))
+            CatalogParser.feed(str(urllib.urlopen(InfoPageURL,context=self.__sslContext).read()))
             return CatalogParser.ListImageURL
         except urllib2.URLError:
             LogE("Error opening due to urllib2.URLError : "+InfoPageURL)
@@ -169,6 +176,7 @@ class NastolWallpapersRetriever:
                 if sourceURL != "":
                     #LogI("Downloading ",sourceURL,"to",FinalFilePath)
                     urllib.urlretrieve(sourceURL, FinalFilePath)
+                    self.__successfullyDownloadedImages+=1
                 else:
                     LogE("Error downloading ",WallpaperName,"Source URL cannot be retrieved")
             except UnicodeDecodeError:
