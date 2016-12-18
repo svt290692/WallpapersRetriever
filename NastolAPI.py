@@ -5,6 +5,7 @@ import ssl
 import threading
 import time
 import os
+import httplib
 from random import randint
 from Utils import *
 from HTMLParser import HTMLParser
@@ -41,7 +42,7 @@ class NastolCatalogPageParser(HTMLParser):
             if cl == "screen-link":
                 href = getAttrByKey("href",attrs)
                 if href != None:
-                    LogI("Found Image URL : ", href)
+                    LogD("Found Image URL : ", href)
                     self.ListImageURL.append(href)
     def handle_endtag(self, tag):
         LogD("handle_endtag :", tag)
@@ -88,75 +89,89 @@ class NastolWallpapersRetriever:
         self.__sslContext = ssl._create_unverified_context()
         self.__sleepSeconds = 5
         self.__PagesWIthError=[]
+        self.__CurrentPageProcessed=0
 
     def StartRetrieving(self):
-        try:
-            if self.__StartPage >= 1 and self.__EndPage >= 1 :
-                if self.__StartPage <= self.__EndPage:
-                    Range=range(self.__StartPage,self.__EndPage+1)
-                else:
-                    Range=list(reversed(range(self.__EndPage,self.__StartPage)))
+        if self.__StartPage >= 1 and self.__EndPage >= 1 :
+            if self.__StartPage <= self.__EndPage:
+                Range=range(self.__StartPage,self.__EndPage+1)
+            else:
+                Range=list(reversed(range(self.__EndPage,self.__StartPage)))
 
-                for pageNum in Range:
-                    try:
-                        LogI("Start processing page :",pageNum)
-                        WallpapersURLsList = self.__GetWallpapersInfoPagesList(pageNum)
-                        if WallpapersURLsList.__len__() == 0 :
-                            self.__PagesWIthError.append(pageNum)
-                        else:
-                            self.__StartRetrievingOriginResolutionWallpapers(WallpapersURLsList)
-                        while self.__CurrentSimultaneousDownloads > self.__MaximumSimultaneousDownloads:
-                            LogI("Maximum simultaneous downloads count occurred, sleep ",self.__sleepSeconds,"seconds")
-                            time.sleep(self.__sleepSeconds)
-                    except UnicodeDecodeError:
-                        LogE("Unicode decode error occurred for page",pageNum)
-        except UnicodeDecodeError:
-            LogE("Unicode decode error occurred")
-        except Exception:
-            LogE("Unknown exception occurred ",Exception)
+            for pageNum in Range:
+                try:
+                    #LogI("PROCESSING PAGE :",pageNum)
+                    self.__CurrentPageProcessed = pageNum
+                    self.__printStatus()
+                    WallpapersURLsList = self.__GetWallpapersInfoPagesList(pageNum)
+                    if WallpapersURLsList != None and WallpapersURLsList.__len__() == 0 :
+                        self.__PagesWIthError.append(pageNum)
+                    elif WallpapersURLsList != None:
+                        self.__StartRetrievingOriginResolutionWallpapers(WallpapersURLsList)
+                    while self.__CurrentSimultaneousDownloads > self.__MaximumSimultaneousDownloads:
+                        LogI("Maximum simultaneous downloads count occurred, sleep ",self.__sleepSeconds,"seconds")
+                        self.__printStatus()
+                        time.sleep(self.__sleepSeconds)
+                    self.__printStatus()
+                except UnicodeDecodeError:
+                    LogE("Unicode decode error occurred for page",pageNum)
         for t in self.__ThreadsDownloads:
             t.join()
+            self.__printStatus()
         del self.__ThreadsDownloads[:]
         self.__ThreadsDownloads=[]
 
+    def __printStatus(self):
+        sys.stdout.write('\r')
+        sys.stdout.write("Processing page num : "+str(self.__CurrentPageProcessed))
+        sys.stdout.write(" Current Count of threads : "+str(self.__CurrentSimultaneousDownloads))
+        
+    
     def __GetWallpapersInfoPagesList(self,PageNum):
         InfoPageURL = NastolRootURL+"/"+self.__CatalogName+"/page/"+str(PageNum)+"/"
 
-        LogI("Open URL : ",InfoPageURL)
+        LogD("Open URL : ",InfoPageURL)
         try:
             CatalogParser = NastolCatalogPageParser()
             CatalogParser.feed(str(urllib2.urlopen(InfoPageURL,context=self.__sslContext).read()))
             return CatalogParser.ListImageURL
         except urllib2.URLError:
             LogE("Error opening : "+InfoPageURL)
+        except httplib.IncompleteRead:
+            LogE("Error opening : "+InfoPageURL)
 
     def __DownloadOriginResolutionWallpaperFromInfoPage(self,page):
         self.__CurrentSimultaneousDownloads+=1
         WallpaperName=page[-page[::-1].index("/"):][:-5]
         FinalFilePath=self.__outputDir+"\\"+WallpaperName+".jpg"
-        LogI("Start new thread, counts = ",self.__CurrentSimultaneousDownloads)
-        # time.sleep(randint(0,9))
+        #LogI("Start new thread, counts = ",self.__CurrentSimultaneousDownloads)
         if not os.path.isfile(FinalFilePath):
             try:
                 WallpaperInfoPageParser = NastolWallpaperInfoPageParser()
-                LogI("Open URL : ",page)
+                LogD("Open URL : ",page)
                 WallpaperInfoPageParser.feed(str(urllib2.urlopen(page,context=self.__sslContext).read()))
 
                 sourceURL = NastolRootURL+WallpaperInfoPageParser.sourceURL
                 if sourceURL != "":
-                    LogI("Downloading ",sourceURL,"to",FinalFilePath)
+                    #LogI("Downloading ",sourceURL,"to",FinalFilePath)
                     urllib.urlretrieve(sourceURL, FinalFilePath)
                 else:
                     LogE("Error downloading ",WallpaperName,"Source URL cannot be retrieved")
-            except:
-                LogE("Error Downloading Wallpaper",WallpaperName)
+            except UnicodeDecodeError:
+                LogE("Error Downloading Wallpaper UnicodeDecodeError ",WallpaperName)
+            except httplib.IncompleteRead:
+                LogE("Error Downloading Wallpaper IncompleteRead ",WallpaperName)
+            except ContentTooShortError:
+                LogE("Error Downloading Wallpaper ContentTooShortError ",WallpaperName)
         else:
-            LogI("SKIPPING already downloaded file :",FinalFilePath)
+            pass
+            #LogI("SKIPPING already downloaded file :",FinalFilePath)
         self.__CurrentSimultaneousDownloads-=1
-        LogI("Thread finished count = ",self.__CurrentSimultaneousDownloads)
+        #LogI("Thread finished count = ",self.__CurrentSimultaneousDownloads)
 
     def __StartRetrievingOriginResolutionWallpapers(self,WallpapersInfoPagesList):
         for page in WallpapersInfoPagesList:
              thread = threading.Thread(target=NastolWallpapersRetriever.__DownloadOriginResolutionWallpaperFromInfoPage, args=(self,page))
              self.__ThreadsDownloads.append(thread)
              thread.start()
+             self.__printStatus()
