@@ -59,11 +59,12 @@ def startGoodFonRetrieving():
         DownloadAllImagesFromGoodFonPage(Catalog,outputDir)
 
 parseSysArgs()
-
+# SourceSite = SourceType_Nastol
 if SourceSite == SourceType_GoofFon:
     startGoodFonRetrieving()
 elif SourceSite == SourceType_Nastol:
     retriever = NastolWallpapersRetriever(Catalog,StartPage,EndPage,outputDir)
+    # retriever = NastolWallpapersRetriever("anime",1,50,"D:\\anime")
     retriever.StartRetrieving()
     # DownloadAllImagesFromNastolPage(Catalog,int(StartPage),int(EndPage),outputDir)
 
